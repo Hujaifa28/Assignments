@@ -1,0 +1,38 @@
+pipeline{
+    agent any
+    stages{
+        stage("Clean Workspace"){
+            steps{
+                cleanWs()
+            }
+        }
+        stage("Github"){
+            steps{
+            dir('/mnt/project'){
+            sh 'yum install git -y'
+            git branch:'2024Q1',url:'https://github.com/Hujaifa28/Jenkins.git'
+            
+            sh 'cat index.html'
+                
+            }
+                
+            }
+        }
+        stage('Docker Install and Run Container'){
+            steps{
+                sh 'yum install docker -y'
+                sh 'systemctl start docker'
+                sh 'docker stop $(docker ps -a -q)'
+                sh 'docker container rm $(docker ps -a -q)'
+                sh 'docker run -dp 80:80 --name web1 httpd'
+            }
+        }
+        stage('Homepage config in Docker'){
+            steps{
+                sh 'chmod -R 777 /mnt/project/index.html 
+                sh 'docker cp /mnt/project/index.html web1:/usr/local/apache2/htdocs/ '
+                
+            }
+        }
+    }
+}
