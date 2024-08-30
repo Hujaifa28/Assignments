@@ -1,0 +1,37 @@
+pipeline
+{
+    agent any
+    stages{
+        stage("clear workspace")
+        {
+            steps{
+                cleanWs()
+            }
+        }
+        stage("git clone"){
+            steps{
+                dir("/mnt/project"){
+                    git branch:"2024Q1" , url:"https://github.com/Hujaifa28/Jenkins.git"
+                }
+            }
+        }
+        stage("docker")
+        {
+            steps{
+                sh "yum install docker -y"
+                sh "systemctl start docker"
+                //for stopping all running containers
+                sh 'docker stop $(docker ps -q) '
+                //for kill and removing all containers and images
+                sh 'docker rm $(docker ps -a -q) '
+            script{
+                //for run docker and getting its container id
+                def containerId = sh(script: "docker run -dp 80:80 --name cont1 httpd", returnStdout: true).trim()
+                echo "Started container with ID: ${containerId}"
+                sh "docker cp ${containerId}:/usr/local/apache2/htdocs index.html"
+                  }
+            }
+        }
+        
+    }
+}
