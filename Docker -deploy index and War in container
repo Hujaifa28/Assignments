@@ -1,0 +1,73 @@
+Master(index, War)
+
+pipeline
+{
+    agent {
+        label 'built-in'
+    }
+    stages
+    {
+        stage("cleans"){
+            steps{
+                cleanWs()
+            }
+            
+        }
+        stage("git")
+        {
+            steps{
+                dir("/mnt/project")
+                {
+                    sh "yum install git -y"
+                    git branch:"2024Q1" ,url:"https://github.com/Hujaifa28/Jenkins.git"
+
+                }
+                dir("/mnt/war")
+                {
+                    git branch:"master" ,url:"https://github.com/Hujaifa28/WAR.git"
+                    sh "mvn clean install"
+
+                }
+            }    
+        }
+        stage("copy index")
+        {
+            steps{
+                sh"scp -o StrictHostKeyChecking=no -i /mnt/keys/mykey.pem /mnt/project/index.html ec2-user@13.127.42.64:/mnt/slave"
+                sh"scp -o StrictHostKeyChecking=no -i /mnt/keys/mykey.pem /mnt/war/target/LoginWebApp.war ec2-user@13.127.42.64:/mnt/slave"
+            }
+        }
+            }
+}
+
+
+
+Slave ()
+
+pipeline
+{
+    agent {
+        label "anu"
+    }
+    stages{
+        stage("docker config")
+        {
+            steps{
+              
+                    sh "sudo yum install docker -y"
+                    sh "sudo systemctl start docker"
+                    sh 'sudo docker stop $(sudo docker ps -a -q)'
+                    sh 'sudo docker rm $(sudo docker ps -a -q)'
+                    sh "sudo docker run -dp 80:80 --name web1
+                    sh "chmod 777 /mnt/slave/index.html"
+                    sh "sudo docker cp /mnt/slave/index.html web1:/usr/local/apache2/htdocs/index.html"
+            }
+        }
+        stage("war"){
+            steps{
+                sh "sudo docker run -dp 8080:8080 --name web2 tomcat"
+                sh "sudo docker cp /mnt/slave/LoginWebApp.war web2:/usr/local/tomcat/webapps/LoginWebApp.war"
+            }
+        }
+    }
+}
