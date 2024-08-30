@@ -1,0 +1,35 @@
+pipeline{
+    agent any
+    stages{
+        stage("clean"){
+            steps{
+                cleanWs()
+            }
+        }
+        stage("docker")
+        {
+            steps{
+            sh "yum install docker -y"
+            sh "systemctl start docker"
+            sh 'docker stop $(docker ps -q)'
+            sh 'docker rm $(docker ps -a -q)'
+            sh 'docker volume rm $(docker volume ls -q)'
+            sh "docker volume create maxx"
+            sh "docker volume inspect maxx"
+            sh "docker run -dp 80:80 -v maxx:/usr/local/apache2/htdocs/ --name web1 httpd"
+            }
+        }
+        stage("volume"){
+            steps{
+                script{
+                    sh '''
+                    cd /var/lib/docker/volumes/maxx/_data
+                     echo "<html>" index.html
+                     echo "<h1>Welcome to First Docker Container!</h1>" >> index.html
+                    '''
+                }
+            }
+        }
+    }
+    
+}
