@@ -1,0 +1,35 @@
+pipeline{
+    agent any 
+    stages{
+        stage ("git colne")
+        {
+            steps{
+                dir ("/mnt/project")
+                {
+                    sh "yum install git -y"
+                    git branch:"master" ,url:"https://github.com/Hujaifa28/WAR.git"
+                    sh "mvn clean install"
+                    sh "cp   /mnt/project/target/LoginWebApp.war / "
+                }
+            }
+        }
+        stage ("docker file")
+        {
+            steps{
+                dir ("/")
+                {
+                sh "yum install docker -y"
+                sh "systemctl start docker"
+                sh '''
+                cat > Dockerfile <<EOF
+                FROM tomcat
+                WORKDIR /usr/local/tomcat/webapps
+                COPY ./LoginWebApp.war .
+                '''
+                sh "docker build -t maxx:1.0 ."
+                sh "docker run -dp 8081:8080 maxx:1.0 "
+                }
+            }
+        }
+    }
+}
